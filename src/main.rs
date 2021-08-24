@@ -18,6 +18,7 @@ fn main() {
 struct Database {
     /// Only map field is involved which is
     /// of type HashMap since we want a key-value pair
+    /// added flush method 
     map: HashMap<String, String>,
 }
 
@@ -69,15 +70,16 @@ impl Database {
     // fn flush(self) -> std::io::Result<()> {
     //     do_flush(&self)
     // }
+
 }
 
 impl Drop for Database {
     fn drop(&mut self) {
-        let _ = do_flush(self);
+        let _ = db_flush(self);
     }
 }
 
-fn do_flush(database: &Database) -> std::io::Result<()> {
+fn db_flush(database: &Database) -> std::io::Result<()> {
     let mut contents = String::new();
     for (key, value) in &database.map {
         contents.push_str(key);
