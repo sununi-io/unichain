@@ -1,92 +1,66 @@
-use std::io::prelude::*;
-use std::{collections::HashMap, path::PathBuf};
+use blockchainlib::*;
 
-fn main() {
-    let args: Vec<String> = std::env::args().collect();
-    // let args: Vec<String> = env::args().collect();
-    // println!("{:?}", args);
-    let key = &args[1];
-    let value = &args[2];
-    // let key = args.next().expect("Key was not found");
-    // let value = args.next().expect("Value could not be found.");
-    let mut database = Database::new().expect("Corrupt database");
-    database.insert(key.to_string(), value.to_string());
-}
+fn main () {
+    let difficulty = 0x000fffffffffffffffffffffffffffff;
 
-/// This serves as the struct or structure
-/// for the database
-struct Database {
-    /// Only map field is involved which is
-    /// of type HashMap since we want a key-value pair
-    /// added flush method 
-    map: HashMap<String, String>,
-}
+    let mut genesis_block = Block::new(0, now(), vec![0; 32], vec![
+        Transaction {
+            inputs: vec![ ],
+            outputs: vec![
+                transaction::Output {
+                    to_addr: "Alice".to_owned(),
+                    value: 50,
+                },
+                transaction::Output {
+                    to_addr: "Bob".to_owned(),
+                    value: 7,
+                },
+            ],
+        },
+    ], difficulty);
 
-/// Implementation of the Database struct
-impl Database {
-    /// Returns a `Result<Database, std::io::Error>` which means a database
-    /// or a standard error is returned. An alias to this return type is
-    /// `std::io::Result<()>`
-    ///
-    ///
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let database = Database::new().expect("Corrupt database");
-    /// ```
-    fn new() -> Result<Database, std::io::Error> {
-        let mut map: HashMap<String, String> = HashMap::new();
-        // read the content of the file
-        // Some other way to have done this is
-        // ```
-        // let contents = match std::fs::read_to_string("kv.db") {
-        //    Ok(c) => c,
-        //     Err(error) => {
-        //        return Err(error);
-        //    }
-        //};
-        // ```
+    genesis_block.mine();
 
-        let mut contents = String::new();
-        let path = PathBuf::from("kv.db");
-        if path.exists() {
-            let file = std::fs::File::open(path)?;
-            let mut buf_reader = std::io::BufReader::new(file);
-            buf_reader.read_to_string(&mut contents)?;
-        } else {
-            std::fs::File::create("kv.db")?;
-        }
-        for line in contents.lines() {
-            let (key, value) = line.split_once("\t").expect("Corrupt database");
-            map.insert(key.to_string(), value.to_string());
-        }
-        Ok(Database { map })
-    }
+    println!("Mined genesis block {:?}", &genesis_block);
 
-    fn insert(&mut self, key: String, value: String) {
-        self.map.insert(key, value);
-    }
-    // fn flush(self) -> std::io::Result<()> {
-    //     do_flush(&self)
-    // }
+    let mut last_hash = genesis_block.hash.clone();
 
-}
+    let mut blockchain = Blockchain::new();
 
-impl Drop for Database {
-    fn drop(&mut self) {
-        let _ = db_flush(self);
-    }
-}
+    blockchain.update_with_block(genesis_block).expect("Failed to add genesis block");
 
-fn db_flush(database: &Database) -> std::io::Result<()> {
-    let mut contents = String::new();
-    for (key, value) in &database.map {
-        contents.push_str(key);
-        contents.push('\t');
-        contents.push_str(value);
-        contents.push('\n');
-    }
-    std::fs::write("kv.db", contents).expect("Unable to create kv.db");
-    Ok(())
+    let mut block = Block::new(1, now(), last_hash, vec![
+        Transaction {
+            inputs: vec![ ],
+            outputs: vec![
+                transaction::Output {
+                    to_addr: "Chris".to_owned(),
+                    value: 536,
+                },
+            ],
+        },
+        Transaction {
+            inputs: vec![
+                blockchain.blocks[0].transactions[0].outputs[0].clone(),
+            ],
+            outputs: vec![
+                transaction::Output {
+                    to_addr: "Alice".to_owned(),
+                    value: 360,
+                },
+                transaction::Output {
+                    to_addr: "Bob".to_owned(),
+                    value: 12,
+                },
+            ],
+        },
+    ], difficulty);
+
+    block.mine();
+
+    println!("Mined block {:?}", &block);
+
+    last_hash = block.hash.clone();
+
+    blockchain.update_with_block(block).expect("Failed to add block");
 }

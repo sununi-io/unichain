@@ -1,0 +1,36 @@
+@startuml
+object UniBlock{
+    pub index: u32,
+    pub timestamp: u128,
+    pub hash: Hash,
+ 
+    pub block_data: store the NFT Values
+}
+
+object UniChain{
+  id = "userid"
+  hash = "hash address"
+  pub prev_block_hash: Hash,
+  block = "uniblock"
+}
+
+object NFTOwner {   
+  owner_addr = "owner_chain:owner address "
+  chain_hash = "chain hash address"
+  
+}
+
+User --> UserHaveNfts
+
+map UserHaveNfts {
+  Userid
+  Userid *--> NFTOwner
+
+}
+
+object KVSToreChain{
+  key = "blockchain hash"
+  value = "use serde to Serialization the blcok data"
+}
+
+@enduml
